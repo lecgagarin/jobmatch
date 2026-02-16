@@ -5,8 +5,8 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def explain_match(cv_text: str, job_description: str, score: int):
 
-   prompt = f"""
-Explain the job match result.
+    prompt = f"""
+Explain the job match result as you were a HR Board Member.
 
 Matching score: {score}%
 
@@ -34,9 +34,9 @@ Formatting rules:
 - Preserve line breaks EXACTLY
 - Each item on new line
 - No paragraphs
-- No extra text
-- No inline formatting
-- Plain text only, as you are a HR Board Member
+- No extra commentary
+- Plain professional language
+- Executive / HR-style tone
 
 CV:
 {cv_text}
