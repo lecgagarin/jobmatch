@@ -6,39 +6,42 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def explain_match(cv_text: str, job_description: str, score: int):
 
     prompt = f"""
-    Explain the job match result briefly.
+Explain the job match result.
 
-    Matching score: {score}%
+Matching score: {score}%
 
-    STRICT FORMAT:
+USE EXACT FORMAT:
 
-    Why match:
-    <max 2 short sentences>
+Why match:
+- <short sentence>
+- <short sentence>
 
-    Strengths:
-    • <bullet>
-    • <bullet>
-    • <bullet>
+Strengths:
+• <short bullet>
+• <short bullet>
+• <short bullet>
 
-    Missing:
-    • <bullet>
-    • <bullet>
-    • <bullet>
+Missing:
+• <short bullet>
+• <short bullet>
+• <short bullet>
 
-    Tips:
-    • <bullet>
-    • <bullet>
+Tips:
+• <short bullet>
+• <short bullet>
 
-    RULES:
-    - Keep it VERY SHORT; as you were a HR Manager
-    - Clean UI-friendly formatting
+STRICT RULES:
+- No \\n characters
+- No long paragraphs
+- Short phrases only; as you vere HR Board member
+- Clean UI formatting
 
-    CV:
-    {cv_text}
+CV:
+{cv_text}
 
-    Job Description:
-    {job_description}
-    """
+Job Description:
+{job_description}
+"""
 
     try:
         response = client.chat.completions.create(
