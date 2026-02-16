@@ -4,6 +4,7 @@ from cv_parser import extract_text_from_pdf
 from ai_analysis import analyze_cv
 from jobs_search import search_jobs
 from matching import calculate_match_score
+from explain import explain_match
 
 app = FastAPI()
 
@@ -35,9 +36,16 @@ async def upload_cv(file: UploadFile = File(...)):
     for job in jobs:
         score = calculate_match_score(extracted_text, job["description"])
 
+        explanation = explain_match(
+            extracted_text,
+            job["description"],
+            score
+        )
+
         scored_jobs.append({
             **job,
-            "match_score": score
+            "match_score": score,
+            "explanation": explanation
         })
 
     return {
