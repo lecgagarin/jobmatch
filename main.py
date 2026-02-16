@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from cv_parser import extract_text_from_pdf
+from ai_analysis import analyze_cv
 
 app = FastAPI()
 
@@ -21,8 +22,10 @@ async def upload_cv(file: UploadFile = File(...)):
 
     extracted_text = extract_text_from_pdf(contents)
 
+    ai_result = analyze_cv(extracted_text)
+
     return {
-        "message": "CV processed successfully",
+        "message": "CV analyzed successfully",
         "filename": file.filename,
-        "text_preview": extracted_text[:500]
+        "analysis": ai_result
     }
