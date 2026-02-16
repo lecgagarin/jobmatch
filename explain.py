@@ -1,21 +1,21 @@
-from openai import OpenAI
-import os
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 def explain_match(cv_text: str, job_description: str, score: int):
 
     prompt = f"""
-    Explain the job match result.
+    Explain the job match result briefly and concisely.
 
     Matching score: {score}%
 
-    Provide:
+    Respond in SHORT FORMAT:
 
-    1. Why this job is a good / bad match
-    2. Key matching strengths
-    3. Missing skills or gaps
-    4. Short improvement suggestions
+    ✅ Why match (1–2 sentences)
+
+    ✅ Strengths (max 3 bullet points)
+
+    ✅ Missing / gaps (max 3 bullet points)
+
+    ✅ Improvement tips (max 2 bullet points)
+
+    Keep response VERY SHORT.
 
     CV:
     {cv_text}
@@ -23,12 +23,3 @@ def explain_match(cv_text: str, job_description: str, score: int):
     Job Description:
     {job_description}
     """
-
-    response = client.chat.completions.create(
-        model="gpt-5-mini",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    return response.choices[0].message.content
