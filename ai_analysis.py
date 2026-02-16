@@ -1,19 +1,20 @@
 from openai import OpenAI
 import os
+import json
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def analyze_cv(cv_text: str):
 
     prompt = f"""
-    Analyze the following CV.
+    Analyze the CV and return JSON:
 
-    Extract:
-
-    1. Most likely job roles
-    2. Key skills
-    3. Seniority level
-    4. Short professional summary
+    {{
+        "roles": [],
+        "skills": [],
+        "seniority": "",
+        "summary": ""
+    }}
 
     CV:
     {cv_text}
@@ -26,4 +27,4 @@ def analyze_cv(cv_text: str):
         ]
     )
 
-    return response.choices[0].message.content
+    return json.loads(response.choices[0].message.content)
