@@ -7,7 +7,10 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def analyze_cv(cv_text: str):
 
     prompt = f"""
-    Analyze the CV and return JSON:
+    Analyze the CV and return ONLY valid JSON.
+
+    Do NOT include explanations.
+    Do NOT include text outside JSON.
 
     {{
         "roles": [],
@@ -27,4 +30,14 @@ def analyze_cv(cv_text: str):
         ]
     )
 
-    return json.loads(response.choices[0].message.content)
+    raw_output = response.choices[0].message.content
+
+    try:
+        return json.loads(raw_output)
+    except:
+        return {
+            "roles": ["Parsing Error"],
+            "skills": [],
+            "seniority": "unknown",
+            "summary": raw_output
+        }
