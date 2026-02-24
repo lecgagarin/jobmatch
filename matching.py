@@ -17,10 +17,8 @@ def get_embedding(text: str):
     )
     return response.data[0].embedding
 
-# ✅ NOWA, ZOPTYMALIZOWANA FUNKCJA
-def calculate_match_score(cv_embedding, job_description: str):
-
-    job_embedding = get_embedding(job_description)
+# ✅ NOWA FUNKCJA – ZERO OPENAI CALLS 🚀🔥
+def calculate_match_score(cv_embedding, job_embedding):
 
     similarity = cosine_similarity(cv_embedding, job_embedding)
 
