@@ -9,6 +9,11 @@ from jobs_search import search_jobs
 
 app = FastAPI()
 
+# ✅ GLOBAL CACHE (RAM)
+JOBS_CACHE = []
+EMBEDDINGS_CACHE = []
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,9 +22,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ✅ ⭐ SYSTEM STARTUP ⭐
+@app.on_event("startup")
+def preload_jobs():
+
+    global JOBS_CACHE, EMBEDDINGS_CACHE
+
+    jobs = []
+
+    for role in ["Finance Manager", "Senior Financial Analyst"]:
+        jobs.extend(search_jobs(role))
+
+    if not jobs:
+        print("⚠ No jobs loaded")
+        return
+
+    JOBS_CACHE = jobs
+
+    descriptions = [job["description"] for job in jobs]
+
+    print("🚀 Generating job embeddings (ONE TIME)...")
+
+    EMBEDDINGS_CACHE = get_embeddings_batch(descriptions)
+
+    print(f"✅ Loaded {len(jobs)} jobs into cache")
+
+
 @app.get("/")
 def home():
     return {"status": "Job Matcher API is running 🚀"}
+
 
 @app.post("/upload-cv")
 async def upload_cv(file: UploadFile = File(...)):
@@ -32,26 +65,13 @@ async def upload_cv(file: UploadFile = File(...)):
             page.extract_text() for page in pdf.pages if page.extract_text()
         )
 
-    # ✅ CV EMBEDDING — ONLY ONCE 🚀🔥
+    # ✅ CV EMBEDDING (ONLY COSTLY STEP)
     cv_embedding = get_embedding(extracted_text)
-
-    # ✅ JOB SEARCH
-    jobs = []
-
-    for role in ["Finance Manager", "Senior Financial Analyst"]:
-        jobs.extend(search_jobs(role))
-
-    if not jobs:
-        return {"message": "No jobs found"}
-
-    # ✅ ⭐⭐⭐ BATCH JOB EMBEDDINGS ⭐⭐⭐
-    job_descriptions = [job["description"] for job in jobs]
-    job_embeddings = get_embeddings_batch(job_descriptions)
 
     scored_jobs = []
 
-    # ✅ ULTRA FAST LOOP 🚀🔥
-    for job, job_embedding in zip(jobs, job_embeddings):
+    # ✅ ULTRA FAST VECTOR LOOP 🚀🔥
+    for job, job_embedding in zip(JOBS_CACHE, EMBEDDINGS_CACHE):
 
         score = calculate_match_score(cv_embedding, job_embedding)
 
@@ -65,7 +85,7 @@ async def upload_cv(file: UploadFile = File(...)):
     # ✅ SORTING
     scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
 
-    # ✅ ONLY BEST MATCH EXPLANATION ⭐⭐⭐
+    # ✅ ONLY BEST MATCH EXPLANATION
     best_job = scored_jobs[0]
 
     best_job["explanation"] = generate_explanation(
