@@ -3,7 +3,7 @@ import os
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def explain_match(cv_text: str, job_description: str, score: int):
+def generate_explanation(cv_text: str, job_description: str, score: int):
 
     prompt = f"""
 Explain the job match result as you were a HR Board Member.
@@ -46,14 +46,12 @@ Job Description:
 """
 
     try:
-        response = client.chat.completions.create(
+        response = client.responses.create(
             model="gpt-5-mini",
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
+            input=prompt
         )
 
-        return response.choices[0].message.content
+        return response.output_text
 
     except Exception as e:
         return f"Explanation unavailable ({str(e)})"
