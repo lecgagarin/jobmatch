@@ -5,7 +5,7 @@ import io
 
 from matching import calculate_match_score, get_embedding
 from explain import generate_explanation
-from jobs import get_jobs  # Twoja funkcja API (Adzuna / Jooble / mock)
+from jobs import search_jobs  # Twoja funkcja API (Adzuna / Jooble / mock)
 
 app = FastAPI()
 
