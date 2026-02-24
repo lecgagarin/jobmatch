@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import pdfplumber
 import io
 
-from matching import calculate_match_score, get_embedding
+from matching import calculate_match_score, get_embedding, get_embeddings_batch
 from explain import generate_explanation
 from jobs_search import search_jobs
 
@@ -41,12 +41,17 @@ async def upload_cv(file: UploadFile = File(...)):
     for role in ["Finance Manager", "Senior Financial Analyst"]:
         jobs.extend(search_jobs(role))
 
+    if not jobs:
+        return {"message": "No jobs found"}
+
+    # ✅ ⭐⭐⭐ BATCH JOB EMBEDDINGS ⭐⭐⭐
+    job_descriptions = [job["description"] for job in jobs]
+    job_embeddings = get_embeddings_batch(job_descriptions)
+
     scored_jobs = []
 
-    # ✅ FAST SCORING LOOP
-    for job in jobs:
-
-        job_embedding = get_embedding(job["description"])
+    # ✅ ULTRA FAST LOOP 🚀🔥
+    for job, job_embedding in zip(jobs, job_embeddings):
 
         score = calculate_match_score(cv_embedding, job_embedding)
 
@@ -60,17 +65,15 @@ async def upload_cv(file: UploadFile = File(...)):
     # ✅ SORTING
     scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
 
-    # ✅ ⭐⭐⭐ ONLY BEST MATCH EXPLANATION ⭐⭐⭐
-    if scored_jobs:
-        best_job = scored_jobs[0]
+    # ✅ ONLY BEST MATCH EXPLANATION ⭐⭐⭐
+    best_job = scored_jobs[0]
 
-        best_job["explanation"] = generate_explanation(
-            extracted_text,
-            best_job["description"],
-            best_job["match_score"]
-        )
+    best_job["explanation"] = generate_explanation(
+        extracted_text,
+        best_job["description"],
+        best_job["match_score"]
+    )
 
-    # ✅ SPEED BOOST
     for job in scored_jobs[1:]:
         job["explanation"] = None
 
