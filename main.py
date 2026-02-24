@@ -5,7 +5,7 @@ import io
 
 from matching import calculate_match_score, get_embedding
 from explain import generate_explanation
-from jobs_search import search_jobs   # ✅ POPRAWNY IMPORT
+from jobs_search import search_jobs
 
 app = FastAPI()
 
@@ -57,12 +57,19 @@ async def upload_cv(file: UploadFile = File(...)):
     # ✅ SORTING
     scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
 
-    # ✅ EXPLAINABILITY — TOP 3 ONLY 🚀
-    for job in scored_jobs[:3]:
-        job["explanation"] = generate_explanation(extracted_text, job["description"], job["match_score"])
+    # ✅ EXPLAINABILITY — ONLY TOP 1 ⭐⭐⭐⭐⭐
+    if scored_jobs:
+
+        top_job = scored_jobs[0]
+
+        top_job["explanation"] = generate_explanation(
+            extracted_text,
+            top_job["description"],
+            top_job["match_score"]
+        )
 
     # ✅ SPEED BOOST
-    for job in scored_jobs[3:]:
+    for job in scored_jobs[1:]:
         job["explanation"] = None
 
     return {
