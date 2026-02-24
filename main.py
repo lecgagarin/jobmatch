@@ -8,13 +8,15 @@ from explain import explain_match
 
 app = FastAPI()
 
+
 @app.get("/")
 def home():
     return {"status": "Job Matcher API is running 🚀"}
 
+
 @app.post("/upload-cv")
 async def upload_cv(file: UploadFile = File(...)):
-    
+
     if not file.filename.endswith(".pdf"):
         return JSONResponse(
             status_code=400,
@@ -28,39 +30,44 @@ async def upload_cv(file: UploadFile = File(...)):
 
     jobs = []
 
+    # ✅ Job search based on AI roles
     for role in analysis["roles"][:3]:
         jobs.extend(search_jobs(role))
 
-scored_jobs = []
+    scored_jobs = []
 
-# ✅ Najpierw liczymy tylko score
-for job in jobs:
-    score = calculate_match_score(extracted_text, job["description"])
+    # ✅ Step 1 – calculate scores ONLY
+    for job in jobs:
+        score = calculate_match_score(
+            extracted_text,
+            job["description"]
+        )
 
-    scored_jobs.append({
-        **job,
-        "match_score": score
-    })
+        scored_jobs.append({
+            **job,
+            "match_score": score
+        })
 
-# ✅ Sortujemy oferty po score
-scored_jobs = sorted(
-    scored_jobs,
-    key=lambda x: x["match_score"],
-    reverse=True
-)
-
-# ✅ Explainability tylko dla TOP 3
-for job in scored_jobs[:3]:
-    job["explanation"] = explain_match(
-        extracted_text,
-        job["description"],
-        job["match_score"]
+    # ✅ Step 2 – sort by match score
+    scored_jobs = sorted(
+        scored_jobs,
+        key=lambda x: x["match_score"],
+        reverse=True
     )
 
-# ✅ Reszta ofert bez explanation
-for job in scored_jobs[3:]:
-    job["explanation"] = None
+    # ✅ Step 3 – explainability ONLY for TOP 3
+    for job in scored_jobs[:3]:
+        job["explanation"] = explain_match(
+            extracted_text,
+            job["description"],
+            job["match_score"]
+        )
 
+    # ✅ Step 4 – remaining jobs WITHOUT explanation
+    for job in scored_jobs[3:]:
+        job["explanation"] = None
+
+    # ✅ FINAL RESPONSE
     return {
         "analysis": analysis,
         "jobs_found": scored_jobs
