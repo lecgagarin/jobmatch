@@ -5,7 +5,7 @@ import io
 
 from matching import calculate_match_score, get_embedding
 from explain import generate_explanation
-from jobs_search import search_jobs   # ✅ poprawny import
+from jobs_search import search_jobs
 
 app = FastAPI()
 
@@ -35,7 +35,7 @@ async def upload_cv(file: UploadFile = File(...)):
     # ✅ CV EMBEDDING — ONLY ONCE 🚀🔥
     cv_embedding = get_embedding(extracted_text)
 
-    # ✅ JOB SEARCH (MVP MOCK)
+    # ✅ JOB SEARCH
     jobs = []
 
     for role in ["Finance Manager", "Senior Financial Analyst"]:
@@ -43,12 +43,12 @@ async def upload_cv(file: UploadFile = File(...)):
 
     scored_jobs = []
 
-    # ✅ FULL OPTIMIZED BLOCK 🚀🚀🚀
+    # ✅ FAST SCORING LOOP
     for job in jobs:
 
-        job_embedding = get_embedding(job["description"])  # ⭐ 1 call per job
+        job_embedding = get_embedding(job["description"])
 
-        score = calculate_match_score(cv_embedding, job_embedding)  # ⚡ pure math
+        score = calculate_match_score(cv_embedding, job_embedding)
 
         scored_jobs.append({
             "title": job["title"],
@@ -60,16 +60,18 @@ async def upload_cv(file: UploadFile = File(...)):
     # ✅ SORTING
     scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
 
-    # ✅ EXPLAINABILITY — TOP 3 ONLY 🚀🔥
-    for job in scored_jobs[:3]:
-        job["explanation"] = generate_explanation(
+    # ✅ ⭐⭐⭐ ONLY BEST MATCH EXPLANATION ⭐⭐⭐
+    if scored_jobs:
+        best_job = scored_jobs[0]
+
+        best_job["explanation"] = generate_explanation(
             extracted_text,
-            job["description"],
-            job["match_score"]
+            best_job["description"],
+            best_job["match_score"]
         )
 
     # ✅ SPEED BOOST
-    for job in scored_jobs[3:]:
+    for job in scored_jobs[1:]:
         job["explanation"] = None
 
     return {
