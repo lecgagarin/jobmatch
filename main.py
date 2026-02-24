@@ -5,7 +5,7 @@ import io
 
 from matching import calculate_match_score, get_embedding
 from explain import generate_explanation
-from jobs import search_jobs  # Twoja funkcja API (Adzuna / Jooble / mock)
+from jobs_search import search_jobs   # ✅ POPRAWNY IMPORT
 
 app = FastAPI()
 
@@ -28,13 +28,18 @@ async def upload_cv(file: UploadFile = File(...)):
 
     # ✅ PDF EXTRACTION
     with pdfplumber.open(io.BytesIO(contents)) as pdf:
-        extracted_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
+        extracted_text = "\n".join(
+            page.extract_text() for page in pdf.pages if page.extract_text()
+        )
 
-    # ✅ EMBEDDING CV — TYLKO RAZ 🚀⭐⭐⭐⭐⭐
+    # ✅ EMBEDDING CV — ONLY ONCE 🚀
     cv_embedding = get_embedding(extracted_text)
 
-    # ✅ JOB SEARCH
-    jobs = get_jobs()  # np. Adzuna / Jooble
+    # ✅ JOB SEARCH (MVP MOCK)
+    jobs = []
+
+    for role in ["Finance Manager", "Senior Financial Analyst"]:
+        jobs.extend(search_jobs(role))
 
     scored_jobs = []
 
@@ -49,14 +54,14 @@ async def upload_cv(file: UploadFile = File(...)):
             "match_score": score
         })
 
-    # ✅ SORTOWANIE
+    # ✅ SORTING
     scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
 
-    # ✅ EXPLAINABILITY — tylko TOP 3 (jak miałeś)
+    # ✅ EXPLAINABILITY — TOP 3 ONLY 🚀
     for job in scored_jobs[:3]:
-        job["explanation"] = generate_explanation(extracted_text, job)
+        job["explanation"] = generate_explanation(extracted_text, job["description"], job["match_score"])
 
-    # ✅ Reszta bez explanation (speed boost)
+    # ✅ SPEED BOOST
     for job in scored_jobs[3:]:
         job["explanation"] = None
 
