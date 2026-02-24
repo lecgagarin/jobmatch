@@ -31,22 +31,35 @@ async def upload_cv(file: UploadFile = File(...)):
     for role in analysis["roles"][:3]:
         jobs.extend(search_jobs(role))
 
-    scored_jobs = []
+scored_jobs = []
 
-    for job in jobs:
-        score = calculate_match_score(extracted_text, job["description"])
+# ✅ Najpierw liczymy tylko score
+for job in jobs:
+    score = calculate_match_score(extracted_text, job["description"])
 
-        explanation = explain_match(
-            extracted_text,
-            job["description"],
-            score
-        )
+    scored_jobs.append({
+        **job,
+        "match_score": score
+    })
 
-        scored_jobs.append({
-            **job,
-            "match_score": score,
-            "explanation": explanation
-        })
+# ✅ Sortujemy oferty po score
+scored_jobs = sorted(
+    scored_jobs,
+    key=lambda x: x["match_score"],
+    reverse=True
+)
+
+# ✅ Explainability tylko dla TOP 3
+for job in scored_jobs[:3]:
+    job["explanation"] = explain_match(
+        extracted_text,
+        job["description"],
+        job["match_score"]
+    )
+
+# ✅ Reszta ofert bez explanation
+for job in scored_jobs[3:]:
+    job["explanation"] = None
 
     return {
         "analysis": analysis,
