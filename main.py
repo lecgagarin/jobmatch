@@ -1,74 +1,66 @@
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse
-from cv_parser import extract_text_from_pdf
-from ai_analysis import analyze_cv
-from jobs_search import search_jobs
-from matching import calculate_match_score
-from explain import explain_match
+from fastapi.middleware.cors import CORSMiddleware
+import pdfplumber
+import io
+
+from matching import calculate_match_score, get_embedding
+from explain import generate_explanation
+from jobs import get_jobs  # Twoja funkcja API (Adzuna / Jooble / mock)
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
     return {"status": "Job Matcher API is running 🚀"}
 
-
 @app.post("/upload-cv")
 async def upload_cv(file: UploadFile = File(...)):
 
-    if not file.filename.endswith(".pdf"):
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Only PDF files are allowed"}
-        )
-
     contents = await file.read()
-    extracted_text = extract_text_from_pdf(contents)
 
-    analysis = analyze_cv(extracted_text)
+    # ✅ PDF EXTRACTION
+    with pdfplumber.open(io.BytesIO(contents)) as pdf:
+        extracted_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
 
-    jobs = []
+    # ✅ EMBEDDING CV — TYLKO RAZ 🚀⭐⭐⭐⭐⭐
+    cv_embedding = get_embedding(extracted_text)
 
-    # ✅ Job search based on AI roles
-    for role in analysis["roles"][:3]:
-        jobs.extend(search_jobs(role))
+    # ✅ JOB SEARCH
+    jobs = get_jobs()  # np. Adzuna / Jooble
 
     scored_jobs = []
 
-    # ✅ Step 1 – calculate scores ONLY
     for job in jobs:
-        score = calculate_match_score(
-            extracted_text,
-            job["description"]
-        )
+
+        score = calculate_match_score(cv_embedding, job["description"])
 
         scored_jobs.append({
-            **job,
+            "title": job["title"],
+            "company": job["company"],
+            "description": job["description"],
             "match_score": score
         })
 
-    # ✅ Step 2 – sort by match score
-    scored_jobs = sorted(
-        scored_jobs,
-        key=lambda x: x["match_score"],
-        reverse=True
-    )
+    # ✅ SORTOWANIE
+    scored_jobs.sort(key=lambda x: x["match_score"], reverse=True)
 
-    # ✅ Step 3 – explainability ONLY for TOP 3
+    # ✅ EXPLAINABILITY — tylko TOP 3 (jak miałeś)
     for job in scored_jobs[:3]:
-        job["explanation"] = explain_match(
-            extracted_text,
-            job["description"],
-            job["match_score"]
-        )
+        job["explanation"] = generate_explanation(extracted_text, job)
 
-    # ✅ Step 4 – remaining jobs WITHOUT explanation
+    # ✅ Reszta bez explanation (speed boost)
     for job in scored_jobs[3:]:
         job["explanation"] = None
 
-    # ✅ FINAL RESPONSE
     return {
-        "analysis": analysis,
+        "message": "CV analyzed successfully",
         "jobs_found": scored_jobs
     }
